@@ -1,0 +1,44 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: |
+  This template creates a single EC2 instance. Hosting static web page run on Apache web server.
+
+Parameters:
+  KeyPairName:
+    Type: String
+    Description: Name of the existing EC2 Key Pair
+    Default: rafe-lesson # Provide a default value or remove it if you want users to always specify a key pair name
+
+  SecurityGroupName:
+    Type: String
+    Description: Name of the existing Security Group
+    Default: rafe-ssh-http # Provide a default value or remove it if you want users to always specify a security group name
+
+Resources:
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-05c13eab67c5d8861
+      InstanceType: t2.micro
+      KeyName: !Ref KeyPairName
+      SecurityGroups: 
+        - !Ref SecurityGroupName
+      Tags:
+        - Key: Name
+          Value: rafe-lesson-cloudformation
+      UserData: 
+        Fn::Base64: |
+          #!/bin/bash
+          yum update -y
+          yum install httpd git -y
+          git clone https://github.com/bluehackrafestefano/Project-101-kittens-carousel-static-website-ec2-CF-07.git app
+          cp ./app/static-web/* /var/www/html/
+          systemctl start httpd
+          systemctl enable httpd
+
+Outputs:
+  WebsiteURL:
+    Description: Kittens Carousel static website URL
+    Value: !Sub
+      - http://${PublicAddress}
+      - PublicAddress: !GetAtt EC2Instance.PublicIp
