@@ -1,44 +1,51 @@
 AWSTemplateFormatVersion: 2010-09-09
 
 Description: |
-  This template creates a single EC2 instance. Hosting static web page run on Apache web server.
+  This template creates a web server containing the Kitten Carousel Project.
+  Creates an EC2 instance with user data, installs Apache and git, pulls resources from Git repo,
+  and hosts site on public IPv4 page.
 
 Parameters:
   KeyPairName:
-    Type: String
+    # Type: String
+    # alternative AWS::EC2::KeyPair::KeyName - lists all keypairs on account and will prompt
+    # you to pick when creating instances
+    Type: AWS::EC2::KeyPair::KeyName
     Description: Name of the existing EC2 Key Pair
-    Default: richer-lesson1
+    # Default: richer-lesson1
 
   SecurityGroupName:
-    Type: String
-    Description: Name of the existing Security Group
-    Default: MyWebSecurityGroup
+    Type: AWS::EC2::SecurityGroup::GroupName
+    # Type: String
+    # Description: Name of the existing Security Group
+    # Default: MyWebSecurityGroup
 
 Resources:
-  EC2Instance:
+  KittenCarouselWebServer:
     Type: AWS::EC2::Instance
     Properties:
-      ImageId: ami-05c13eab67c5d8861
+      ImageId: ami-0440d3b780d96b29d
       InstanceType: t2.micro
       KeyName: !Ref KeyPairName
       SecurityGroups: 
         - !Ref SecurityGroupName
       Tags:
         - Key: Name
-          Value: richer-lesson1
+          Value: kitten-carousel-lesson
       UserData: 
         Fn::Base64: |
           #!/bin/bash
-          yum update -y
-          yum install httpd git -y
+          dnf update -y
+          dnf install httpd git -y
           git clone https://github.com/richer-tan/kittens-carousel.git app
           cp ./app/static-web/* /var/www/html/
           systemctl start httpd
           systemctl enable httpd
 
 Outputs:
-  WebsiteURL:
-    Description: Kittens Carousel static website URL
+  PublicIPAddress:
+    Description: Kittens Carousel site's static public IPv4 address.
     Value: !Sub
-      - http://${PublicAddress}
-      - PublicAddress: !GetAtt EC2Instance.PublicIp
+       - http://${PublicAddress}
+       - PublicAddress: !GetAtt KittenCarouselWebServer.PublicIp
+    # !GetAtt KittenCarouselWebServer.PublicIp
